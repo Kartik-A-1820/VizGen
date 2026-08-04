@@ -17,6 +17,23 @@ VizGen runs a React UI, a FastAPI queue/orchestration backend, and a headless Co
 
 Built for Windows 11 with NVIDIA GTX 1650 Ti 4 GB, 16 GB RAM, CUDA 11.8, and torch 2.7.1+cu118. Larger GPUs will run faster, but this repo is designed around strict 4 GB VRAM discipline: GGUF models, low-VRAM ComfyUI, and one model loaded at a time.
 
+## Models
+
+The dropdown is driven entirely by `backend/models_registry.yaml`.
+
+| Task | Model | Notes |
+|---|---|---|
+| Generate (default) | **Z-Image Turbo** (6B, GGUF) | fastest + highest verified quality on 4 GB; few-step |
+| Generate | Qwen-Image Lightning (GGUF) | quality option, 4–8 step |
+| Generate | FLUX.1-dev (GGUF Q4) | max prompt-adherence, slow |
+| Edit | **FLUX.1 Kontext** (12B, GGUF) | instruction editing; slow on 4 GB (~15–40 min/edit) |
+| Enhance | Qwen2.5-1.5B (CPU) | prompt + negative rewriting |
+| Upscale | RealESRGAN ×4 | post-process super-resolution |
+
+## Benchmarks
+
+On the 4 GB target, **Z-Image Turbo is the pick** — **~3–3.5 min at 512–768²** (~80 s once the encoder is warm) with near-SOTA photorealism. **768² is the sweet spot**; 1024² pushes VRAM to 94 % and thrashes (~7 min). Editing (FLUX Kontext) works but is a **slow tier** (~15–40 min/edit — the 12 B model exceeds 4 GB). Full numbers and methodology in **[BENCHMARKS.md](BENCHMARKS.md)**.
+
 ## Quick Start
 
 Prerequisites: Python 3.10 or 3.11, Git, Node.js/npm, and recent NVIDIA drivers.
@@ -31,7 +48,7 @@ launch.bat
 
 Open `http://localhost:5173`.
 
-`setup.bat` installs dependencies, clones ComfyUI, installs image-model support, downloads auxiliary models, and calls `scripts\download_image_models.py` for the image/edit model set. Some model downloads may require a Hugging Face token.
+`setup.bat` installs dependencies, clones ComfyUI, installs image-model support, downloads auxiliary models, and calls `scripts\download_image_models.py` for the image/edit model set (~15–20 GB). It **prompts you to paste a free [Hugging Face token](https://huggingface.co/settings/tokens)** to speed up downloads — press Enter to skip and download anonymously (slower).
 
 ## Architecture
 
