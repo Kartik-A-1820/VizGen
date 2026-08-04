@@ -62,6 +62,8 @@ ComfyUI engine (:8188, --lowvram)
 Qwen2.5-1.5B CPU prompt enhancer
 ```
 
+See **[ARCHITECTURE.md](ARCHITECTURE.md)** for the full design, mermaid diagrams, and the reasoning behind every 4 GB optimization.
+
 ## Key Paths
 
 | Component | Path |
