@@ -1,0 +1,58 @@
+# ── VizGen .gitignore ──────────────────────────────────────────────
+# Push CODE + SETUP files only. Everything heavy/generated is recreated
+# by setup.bat (deps, ComfyUI clone, model weights) or at runtime.
+
+# Python env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.python-version
+
+# Model weights (tens of GB — downloaded by setup.bat)
+models/
+*.gguf
+*.safetensors
+*.pth
+*.pt
+*.ckpt
+*.bin
+*.onnx
+
+# Inference engine (ComfyUI is cloned by setup.bat, has its own git history)
+engine/
+
+# Node / frontend build artifacts
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Runtime data & outputs
+data/
+outputs/
+*.sqlite3
+*.db
+
+# Generated media & benchmark run artifacts (keep the .py/.md, drop the noise)
+benchmarks/*.log
+benchmarks/*.jsonl
+benchmarks/*.err
+benchmarks/*.png
+benchmarks/*.mp4
+benchmarks/*_test.json
+benchmarks/catdog_q4_t2v.json
+benchmarks/comfy_bench_*.log
+
+# Editor / OS / agent scratch
+.env
+.env.*
+.agents/
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Machine-private only (never push) — personal guide, local registry overlay, private workflows
+local/
+!local.example/

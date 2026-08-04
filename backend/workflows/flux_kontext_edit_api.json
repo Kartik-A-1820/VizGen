@@ -1,0 +1,107 @@
+{
+  "_meta": {
+    "title": "FLUX.1 Kontext Dev GGUF — instruction image edit",
+    "task": "edit",
+    "model": "flux1-kontext-dev-Q3_K_S.gguf",
+    "notes": "LoadImage is injected/patched by backend for init_image. Prompt = edit instruction."
+  },
+  "prompt": {
+    "1": {
+      "class_type": "UnetLoaderGGUF",
+      "inputs": {
+        "unet_name": "flux1-kontext-dev-Q3_K_S.gguf"
+      }
+    },
+    "2": {
+      "class_type": "DualCLIPLoader",
+      "inputs": {
+        "clip_name1": "clip_l.safetensors",
+        "clip_name2": "t5xxl_fp8_e4m3fn.safetensors",
+        "type": "flux",
+        "device": "default"
+      }
+    },
+    "3": {
+      "class_type": "VAELoader",
+      "inputs": {
+        "vae_name": "ae.safetensors"
+      }
+    },
+    "4": {
+      "class_type": "LoadImage",
+      "inputs": {
+        "image": "example.png"
+      }
+    },
+    "5": {
+      "class_type": "FluxKontextImageScale",
+      "inputs": {
+        "image": ["4", 0]
+      }
+    },
+    "6": {
+      "class_type": "VAEEncode",
+      "inputs": {
+        "pixels": ["5", 0],
+        "vae": ["3", 0]
+      }
+    },
+    "7": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "text": "${prompt}",
+        "clip": ["2", 0]
+      }
+    },
+    "8": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "text": "",
+        "clip": ["2", 0]
+      }
+    },
+    "9": {
+      "class_type": "FluxGuidance",
+      "inputs": {
+        "guidance": 2.5,
+        "conditioning": ["7", 0]
+      }
+    },
+    "10": {
+      "class_type": "ReferenceLatent",
+      "inputs": {
+        "conditioning": ["9", 0],
+        "latent": ["6", 0]
+      }
+    },
+    "11": {
+      "class_type": "KSampler",
+      "inputs": {
+        "seed": "${seed}",
+        "steps": "${steps}",
+        "cfg": 1.0,
+        "sampler_name": "${sampler}",
+        "scheduler": "${scheduler}",
+        "denoise": 1.0,
+        "model": ["1", 0],
+        "positive": ["10", 0],
+        "negative": ["8", 0],
+        "latent_image": ["6", 0]
+      }
+    },
+    "12": {
+      "class_type": "VAEDecode",
+      "inputs": {
+        "samples": ["11", 0],
+        "vae": ["3", 0]
+      }
+    },
+    "13": {
+      "class_type": "SaveImage",
+      "inputs": {
+        "filename_prefix": "flux_kontext_edit",
+        "images": ["12", 0]
+      }
+    }
+  }
+}

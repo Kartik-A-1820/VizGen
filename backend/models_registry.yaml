@@ -1,0 +1,116 @@
+models:
+  # Track A owns downloads/workflows and will enable entries after 4GB smoke tests.
+  # Track B owns this image-only schema.
+
+  - id: z-image-turbo
+    label: Z-Image Turbo
+    family: Z-Image
+    model_name: Z-Image-Turbo
+    task: generate
+    tier: fast
+    engine: comfyui
+    quant: Q4_K_M
+    vram_tier: 4gb-lowvram
+    workflow: z_image_turbo_generate_api.json
+    defaults:
+      width: 768
+      height: 768
+      steps: 8
+      cfg: 1.0
+      sampler: euler
+      scheduler: simple
+      seed: -1
+    launch_flags:
+      - --lowvram
+    paths:
+      unet: models/unet/z_image_turbo-Q4_K_M.gguf
+      text_encoder: models/text_encoders/qwen_3_4b_fp8_mixed.safetensors
+      vae: models/vae/ae.safetensors
+    ui_note: "Primary few-step generation model for 4GB. Best default."
+    enabled: true
+
+  - id: qwen-image-lightning
+    label: Qwen-Image Lightning
+    family: Qwen-Image
+    model_name: Qwen-Image
+    task: generate
+    tier: quality
+    engine: comfyui
+    quant: Q4_K_M_PLUS_LIGHTNING_8STEP
+    vram_tier: 4gb-lowvram
+    workflow: qwen_image_lightning_generate_api.json
+    defaults:
+      width: 768
+      height: 768
+      steps: 8
+      cfg: 1.0
+      sampler: euler
+      scheduler: simple
+      seed: -1
+    launch_flags:
+      - --lowvram
+    paths:
+      unet: models/unet/qwen-image-Q4_K_M.gguf
+      text_encoder: models/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors
+      vae: models/vae/qwen_image_vae.safetensors
+      lora: models/loras/Qwen-Image-Lightning-8steps-V1.0.safetensors
+    ui_note: "Quality generation model with Lightning LoRA. Slow cold text encode on 16GB RAM."
+    enabled: true
+
+  - id: flux-dev-q4
+    label: FLUX.1-dev Q4
+    family: FLUX.1
+    model_name: FLUX.1-dev
+    task: generate
+    tier: max-quality
+    engine: comfyui
+    quant: Q4_K_S
+    vram_tier: 4gb-heavy-offload
+    workflow: flux_dev_generate_api.json
+    defaults:
+      width: 768
+      height: 768
+      steps: 20
+      cfg: 3.5
+      sampler: euler
+      scheduler: simple
+      seed: -1
+    launch_flags:
+      - --lowvram
+      - --cpu-vae
+    paths:
+      unet: models/unet/flux1-dev-Q4_K_S.gguf
+      clip_l: models/text_encoders/clip_l.safetensors
+      t5: models/text_encoders/t5xxl_fp8_e4m3fn.safetensors
+      vae: models/vae/ae.safetensors
+    ui_note: "Max-quality slow generation model. Heavy CPU offload on 4GB."
+    enabled: true
+
+  - id: flux-kontext-dev
+    label: FLUX.1 Kontext dev
+    family: FLUX.1
+    model_name: FLUX.1-Kontext-dev
+    task: edit
+    tier: edit
+    engine: comfyui
+    quant: Q3_K_S
+    vram_tier: 4gb-heavy-offload
+    workflow: flux_kontext_edit_api.json
+    defaults:
+      width: 768
+      height: 768
+      steps: 20
+      cfg: 3.5
+      sampler: euler
+      scheduler: simple
+      seed: -1
+    launch_flags:
+      - --lowvram
+      - --cpu-vae
+    paths:
+      unet: models/unet/flux1-kontext-dev-Q3_K_S.gguf
+      clip_l: models/text_encoders/clip_l.safetensors
+      t5: models/text_encoders/t5xxl_fp8_e4m3fn.safetensors
+      vae: models/vae/ae.safetensors
+    ui_note: "Instruction image editing model. Slow on 4GB because T5 runs under tight RAM."
+    enabled: true

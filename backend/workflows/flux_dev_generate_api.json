@@ -1,0 +1,89 @@
+{
+  "_meta": {
+    "title": "FLUX.1-dev GGUF Generate",
+    "task": "generate",
+    "model": "flux1-dev-Q4_K_S.gguf",
+    "notes": "Max-quality slow generate path for 4GB low-VRAM. Tokens: prompt, negative_prompt, width, height, seed, steps, cfg, sampler, scheduler."
+  },
+  "prompt": {
+    "1": {
+      "class_type": "UnetLoaderGGUF",
+      "inputs": {
+        "unet_name": "flux1-dev-Q4_K_S.gguf"
+      }
+    },
+    "2": {
+      "class_type": "DualCLIPLoader",
+      "inputs": {
+        "clip_name1": "clip_l.safetensors",
+        "clip_name2": "t5xxl_fp8_e4m3fn.safetensors",
+        "type": "flux",
+        "device": "default"
+      }
+    },
+    "3": {
+      "class_type": "VAELoader",
+      "inputs": {
+        "vae_name": "ae.safetensors"
+      }
+    },
+    "4": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "text": "${prompt}",
+        "clip": ["2", 0]
+      }
+    },
+    "5": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "text": "${negative_prompt}",
+        "clip": ["2", 0]
+      }
+    },
+    "6": {
+      "class_type": "FluxGuidance",
+      "inputs": {
+        "guidance": 3.5,
+        "conditioning": ["4", 0]
+      }
+    },
+    "7": {
+      "class_type": "EmptySD3LatentImage",
+      "inputs": {
+        "width": "${width}",
+        "height": "${height}",
+        "batch_size": 1
+      }
+    },
+    "8": {
+      "class_type": "KSampler",
+      "inputs": {
+        "seed": "${seed}",
+        "steps": "${steps}",
+        "cfg": "${cfg}",
+        "sampler_name": "${sampler}",
+        "scheduler": "${scheduler}",
+        "denoise": 1.0,
+        "model": ["1", 0],
+        "positive": ["6", 0],
+        "negative": ["5", 0],
+        "latent_image": ["7", 0]
+      }
+    },
+    "9": {
+      "class_type": "VAEDecode",
+      "inputs": {
+        "samples": ["8", 0],
+        "vae": ["3", 0]
+      }
+    },
+    "10": {
+      "class_type": "SaveImage",
+      "inputs": {
+        "filename_prefix": "flux_dev",
+        "images": ["9", 0]
+      }
+    }
+  }
+}
