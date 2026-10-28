@@ -1,6 +1,6 @@
 # VizGen — Architecture & Design Decisions
 
-VizGen is a local, self-hosted **image generation + instruction-editing** server built to run **near-SOTA open-weight models on a 4 GB GPU** (GTX 1650 Ti, Turing, 16 GB system RAM). Almost every design choice here is a direct consequence of that constraint — this document explains both the structure and the *why*.
+VizGen is a local image-generation and instruction-editing workbench built around a 4 GB development GPU. This document describes the orchestration and memory tradeoffs used on that reference machine.
 
 ---
 
@@ -41,9 +41,9 @@ flowchart TB
     API -->|"gallery"| UI
 ```
 
-**Why a FastAPI layer in front of ComfyUI** instead of using ComfyUI directly: we need one clean product surface (a job queue with history/gallery, a model dropdown, staged multi-model pipelines, and honest progress/ETA). ComfyUI is the engine room; FastAPI is the product.
+**Why a FastAPI layer in front of ComfyUI** instead of using ComfyUI directly: the backend provides a persistent queue, model registry, staged jobs, and progress events above the inference engine.
 
-**Why ComfyUI as the engine** instead of raw `diffusers`: it has the most mature low-VRAM memory manager in the open ecosystem (`--lowvram` weight streaming, tiled VAE), a first-class GGUF loader, a headless HTTP/WebSocket API, and no built-in content filter to work around.
+**Why ComfyUI as the engine** instead of raw `diffusers`: it exposes the low-VRAM execution, tiled VAE, GGUF custom-node support, and HTTP/WebSocket interfaces used by these workflows. This is a project design choice, not a comparative engine benchmark.
 
 ---
 
@@ -155,7 +155,7 @@ The dropdown itself is **100 % registry-driven** (`backend/models_registry.yaml`
 |---|---|---|
 | GGUF-quantized models everywhere | Only way large DiTs fit in/near 4 GB | Slight quality loss vs fp16 |
 | `--lowvram` weight streaming | Runs 5–7 GB models on a 4 GB card via CPU offload | Slower per step |
-| `/free` between every stage | Can't hold two models at once; guarantees clean handoff | Cold reload each stage |
+| `/free` between every stage | Reduce simultaneous model residency; explicit release between stages | Cold reload each stage |
 | Enhancer as CPU subprocess | Frees ~6 GB RAM on exit; never competes for GPU | Cold LLM load per job |
 | **Q4_K_M over Q3** | Benchmarks show VRAM peak is *activation-bound* — Q3 buys no headroom, Q4 is sharper | Marginally larger file |
 | **Cap generate at 768²** | 1024² pushes VRAM to 94 % → per-step weight-streaming (~7 min) | Lower max resolution (upscale ×4 recovers pixels) |
@@ -164,7 +164,7 @@ The dropdown itself is **100 % registry-driven** (`backend/models_registry.yaml`
 ### Models
 | Decision | Why |
 |---|---|
-| **Z-Image Turbo** as default generator | Fastest (few-step) *and* highest quality actually verified on 4 GB |
+| **Z-Image Turbo** as default generator | Few-step reference configuration with recorded timings and qualitative output inspection |
 | FLUX-dev / Qwen-Image as options | Quality alternatives; kept but flagged (heavier, slower) |
 | **FLUX.1 Kontext** for editing | Best open instruction-editor; kept as a **slow tier** (12 B > 4 GB → ~15–40 min/edit) |
 | Qwen2.5-1.5B (CPU) enhancer / RealESRGAN upscaler | Cheap, CPU-or-light features that compose in the staged pipeline |

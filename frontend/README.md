@@ -1,16 +1,16 @@
-# React + Vite
+# VizGen frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React/Vite interface for job submission, progress, and the output gallery.
 
-Currently, two official plugins are available:
+From this directory:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm ci
+npm run dev
+```
 
-## React Compiler
+Use Node.js compatible with the locked Vite toolchain. The development server listens on port 5173 and proxies `/api` and `/ws` to the backend on port 8000; see `vite.config.js`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+`npm run build` checks the production bundle and `npm run lint` runs Oxlint. A successful build does not validate generation: the API, ComfyUI, model registry, custom nodes, and weights must also be ready.
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+For UI changes, check job submission, queued/running/failed/completed states, reconnect behavior, and gallery rendering against the local backend. Include screenshots for visible changes. See [CONTRIBUTING.md](../CONTRIBUTING.md) and the [root README](../README.md).
