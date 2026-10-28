@@ -1,15 +1,9 @@
-# Local private overrides (example)
+# Machine-specific registry overrides
 
-Copy this folder to `local/` on your machine (the real `local/` directory is **gitignored**).
+Create a repository-local `local/` directory for private configuration. That directory is gitignored.
 
-```text
-mkdir local
-copy local.example\README.md local\
-# Then create:
-#   local/PERSONAL_GENERATE.md
-#   local/models_registry.local.yaml
-```
+`backend/app/registry.py` merges `local/models_registry.local.yaml` into the model registry when the file exists. Follow the structure of `backend/models_registry.yaml` and the registry loader when preparing an override.
 
-Or let an agent recreate the private guide under `local/` (never commit it).
+Keep machine paths, local notes, and credentials out of shared configuration. Do not commit private model/input paths. A registry entry alone does not install weights or validate its workflow.
 
-`backend/app/registry.py` loads `local/models_registry.local.yaml` if present and merges into the model dropdown **only on that machine**.
+See the [root README](../README.md) and [contribution guide](../CONTRIBUTING.md).
