@@ -1,90 +1,84 @@
 # VizGen
 
-A local, self-hosted **image generation and instruction-editing** server for a 4 GB GPU target.
+A local image-generation and instruction-editing workbench built with React, FastAPI, and ComfyUI. A persistent job queue runs generation, optional prompt enhancement, and upscaling in stages to reduce simultaneous memory use.
 
-VizGen runs a React UI, a FastAPI queue/orchestration backend, and a headless ComfyUI engine. The product is image-only and designed for the GTX 1650 Ti 4 GB target.
+The development target is a Windows 11 laptop with a GTX 1650 Ti (4 GB) and 16 GB system RAM. Reported results describe that setup; other environments need separate validation.
 
-## Features
+## Implementation
 
-- **Generate**: text-to-image through a registry-driven model dropdown.
-- **Edit**: image + natural-language instruction to edited image, routed internally to FLUX.1 Kontext.
-- **Enhance**: optional local Qwen2.5 prompt/negative-prompt enhancer on CPU.
-- **Upscale**: optional RealESRGAN x4 post-processing.
-- **Staged low-VRAM pipeline**: enhance, generate/edit, and upscale run sequentially with ComfyUI `/free` between stages.
-- **Live progress**: stage, message, progress, ETA, queue status, and gallery.
+- Registry-driven model selection and ComfyUI workflow graphs.
+- SQLite job persistence, a single worker, progress events, and a gallery.
+- Sequential model loading/release between generation and post-processing stages.
+- Optional CPU prompt rewriting with Qwen2.5 and RealESRGAN upscaling.
 
-## Hardware Target
+The application currently handles images. Model-training code and video generation are outside its current scope.
 
-Built for Windows 11 with NVIDIA GTX 1650 Ti 4 GB, 16 GB RAM, CUDA 11.8, and torch 2.7.1+cu118. Larger GPUs will run faster, but this repo is designed around strict 4 GB VRAM discipline: GGUF models, low-VRAM ComfyUI, and one model loaded at a time.
+## Inspect before downloading models
 
-## Models
+[ARCHITECTURE.md](ARCHITECTURE.md) explains the worker and memory strategy. [BENCHMARKS.md](BENCHMARKS.md) records timings and measurement limits.
 
-The dropdown is driven entirely by `backend/models_registry.yaml`.
+To inspect/build the frontend without downloading weights:
 
-| Task | Model | Notes |
-|---|---|---|
-| Generate (default) | **Z-Image Turbo** (6B, GGUF) | fastest + highest verified quality on 4 GB; few-step |
-| Generate | Qwen-Image Lightning (GGUF) | quality option, 4–8 step |
-| Generate | FLUX.1-dev (GGUF Q4) | max prompt-adherence, slow |
-| Edit | **FLUX.1 Kontext** (12B, GGUF) | instruction editing; slow on 4 GB (~15–40 min/edit) |
-| Enhance | Qwen2.5-1.5B (CPU) | prompt + negative rewriting |
-| Upscale | RealESRGAN ×4 | post-process super-resolution |
+```bash
+git clone https://github.com/Kartik-A-1820/VizGen.git
+cd VizGen/frontend
+npm ci
+npm run build
+npm run lint
+```
 
-## Benchmarks
+Use a Node.js version compatible with the Vite version in `package.json`. The UI can build independently; generation requires the backend, ComfyUI, custom nodes, and model artifacts.
 
-On the 4 GB target, **Z-Image Turbo is the pick** — **~3–3.5 min at 512–768²** (~80 s once the encoder is warm) with near-SOTA photorealism. **768² is the sweet spot**; 1024² pushes VRAM to 94 % and thrashes (~7 min). Editing (FLUX Kontext) works but is a **slow tier** (~15–40 min/edit — the 12 B model exceeds 4 GB). Full numbers and methodology in **[BENCHMARKS.md](BENCHMARKS.md)**.
+## Run the full application on Windows
 
-## Quick Start
+Prerequisites: Python 3.10 or 3.11, Git, Node.js/npm, a compatible NVIDIA driver, and disk space for model weights and caches.
 
-Prerequisites: Python 3.10 or 3.11, Git, Node.js/npm, and recent NVIDIA drivers.
+From the repository root:
 
 ```bat
-git clone https://github.com/Kartik-A-1820/VizGen.git
-cd VizGen
-
 setup.bat
 launch.bat
 ```
 
-Open `http://localhost:5173`.
+Read `setup.bat` first. It creates a venv, installs the backend and a fixed CUDA PyTorch build, clones ComfyUI/custom nodes, and downloads several model families and auxiliary weights. The combined download is substantial and has no fixed size guarantee. Upstream clones and some Python dependencies are not pinned; this is not a locked reproduction environment.
 
-`setup.bat` installs dependencies, clones ComfyUI, installs image-model support, downloads auxiliary models, and calls `scripts\download_image_models.py` for the image/edit model set (~15–20 GB). It **prompts you to paste a free [Hugging Face token](https://huggingface.co/settings/tokens)** to speed up downloads — press Enter to skip and download anonymously (slower).
+The setup accepts an optional `HF_TOKEN`. Access depends on the selected model's availability and terms; a token does not guarantee download speed. Never put a token in an issue or commit.
 
-## Architecture
+`launch.bat` opens three service terminals:
 
-```text
-Web UI (React/Vite, :5173)
-      |
-FastAPI backend (:8000) -- SQLite queue -- staged worker
-      |                    enhance -> generate/edit -> upscale
-      |                    /free between stages
-ComfyUI engine (:8188, --lowvram)
-Qwen2.5-1.5B CPU prompt enhancer
-```
+| Service | Address |
+| --- | --- |
+| ComfyUI engine | `http://127.0.0.1:8188` |
+| FastAPI backend | `http://127.0.0.1:8000` |
+| Vite frontend | `http://localhost:5173` |
 
-See **[ARCHITECTURE.md](ARCHITECTURE.md)** for the full design, mermaid diagrams, and the reasoning behind every 4 GB optimization.
+Wait for the engine and API to become ready. For a first generation, use the default model, a modest resolution, and disable enhancement/upscaling. Check the saved output and job status before enabling the full staged pipeline. Close the service terminals to stop them.
 
-## Key Paths
+The launch workflow is Windows-specific. The individual Python/npm processes can be adapted elsewhere, but a portable setup is not established by these scripts.
 
-| Component | Path |
-|---|---|
-| Backend API and worker | `backend/app/` |
-| Model registry | `backend/models_registry.yaml` |
-| ComfyUI workflows | `backend/workflows/` |
-| Frontend | `frontend/` |
-| Setup/download scripts | `scripts/` |
-| Plan and status | `plan.md` |
+## Models and measurements
 
-Model weights, the ComfyUI clone, Python venv, node modules, generated outputs, and SQLite data are excluded from git.
+`backend/models_registry.yaml` drives the available tasks. Configured families include Z-Image Turbo, Qwen-Image, FLUX.1-dev, and FLUX.1 Kontext. Their model licenses and access terms are separate from this repository.
 
-## Development
+The repository reports approximately **188 s at 512²** and **202 s at 768²** for its Z-Image configuration on the reference laptop. Cold/warm loading, sampling, and full-pipeline timings must be distinguished; see the benchmark notes. Some other models were only smoke-tested.
 
-Run pieces individually after setup:
+Output inspection is qualitative. No standardized image-quality or prompt-adherence benchmark establishes a model ranking here. Timing results are not a universal speed or memory guarantee.
 
-```bat
-.venv\Scripts\python.exe engine\comfyui\main.py --listen 127.0.0.1 --port 8188 --lowvram --disable-auto-launch
-.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
-cd frontend && npm run dev
-```
+## Source map
 
-See `plan.md` for the current image-only roadmap and per-track responsibilities.
+| Path | Responsibility |
+| --- | --- |
+| `backend/app/` | API, persistent queue, staged worker |
+| `backend/models_registry.yaml` | Task/model registry |
+| `backend/workflows/` | ComfyUI graphs |
+| `frontend/` | Job submission, progress, gallery |
+| `scripts/` | Download and workflow utilities |
+| `benchmarks/` | Recorded runs and measurement scripts |
+
+See [frontend/README.md](frontend/README.md) for UI development and [local.example/README.md](local.example/README.md) for machine-specific registry overlays. Keep weights, caches, generated images, databases, and local credentials out of commits.
+
+## Contribute
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Useful work includes pinned engine/custom-node revisions, queue/error-path tests, portable installation, reproducible cold/warm measurements, and a documented image-evaluation protocol.
+
+No standalone LICENSE file is included. Check repository and model reuse terms before redistribution.

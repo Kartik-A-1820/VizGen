@@ -26,8 +26,8 @@ REM Model weights come from Hugging Face. A free access token makes downloads
 REM much faster and avoids anonymous rate limits. Asked once, used below.
 if defined HF_TOKEN goto :hf_ready
 echo(
-echo   Model weights (~15-20 GB) download from Hugging Face.
-echo   A FREE access token makes this much faster and avoids rate limits.
+echo   This setup downloads multiple large model families and auxiliary weights.
+echo   An optional access token may be needed for selected model access.
 echo   Create one at:  https://huggingface.co/settings/tokens
 echo(
 set /p "HF_TOKEN=  Paste your Hugging Face token (or press Enter to skip): "
@@ -35,7 +35,7 @@ set /p "HF_TOKEN=  Paste your Hugging Face token (or press Enter to skip): "
 if defined HF_TOKEN (
   echo   [ok] Hugging Face token set for this setup.
 ) else (
-  echo   [warn] No token entered - downloads will use the slower anonymous path.
+  echo   [warn] No token entered - downloads will use anonymous access where allowed.
 )
 echo(
 
